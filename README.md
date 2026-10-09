@@ -31,7 +31,7 @@ Topic names are matched ignoring case and punctuation (`C++` and `C#` both becom
 1. You explain the topic without looking anything up.
 2. The skill quotes you and asks one question about one gap. It does not give the answer.
 3. When the explanation holds up, it proposes 3 to 6 cards. You edit or drop any.
-4. You decide whether to save them.
+4. You decide whether to save them. After a yes, the model writes the cards to a temporary JSON file and runs `study.py add --topic <name> --file <that file>` as one single-line command (`--file -` or no `--file` reads stdin).
 5. In reviews you answer first, then see the answer, then say right, almost or wrong.
 
 Reviews use five boxes with gaps of 1, 3, 7, 16 and 35 days. Right moves a card up one box. Almost keeps it in its box. Wrong sends it back to box 1.
@@ -45,7 +45,7 @@ Cards live in `~/.teach-back/`, one JSON file per topic. Set `STUDY_DIR` to use 
 | What | Approx. tokens |
 |---|---|
 | Listing (description, every turn) | 59 |
-| Invocation (SKILL.md) | 854 |
+| Invocation (SKILL.md) | 878 |
 | references/cards.md (only when needed) | 187 |
 | references/gaps.md (only when needed) | 201 |
 
@@ -60,7 +60,9 @@ Real runs in `examples/`, each with the tool and model used.
 - `examples/session-3-review.md`: a review of one due card; it showed the question only and waited for the learner's answer.
 - `examples/session-4-multi-turn.md`: one conversation that teaches back (English) and a second that reviews three cards. The review worked: the model showed each question before its answer, ran `grade` three times, and all three cards moved to box 2 on disk. The save did not work in that setup: the model tried `add` with a quoted heredoc, the headless permission rule refused it, and the cards were added by hand before the review. The model told the learner the cards were not saved. One of its gap questions leaned toward the answer.
 
-Known limits: the runs were made with Claude Code and one model, `claude-sonnet-5-5`, and the skill was used in all four. Sessions 1 to 3 are single turns and ran on SKILL.md as committed in 35c047b, which was edited afterwards (python command, final due count, failed-save handling, topic names). Session 4 ran on the final SKILL.md commit, and its learner turns were written by an AI test driver, not a human. Every prompt named the skill explicitly, so the runs show how it behaves when invoked by name; they do not show that it starts on its own from its description. Session 1 followed the one-question rule only on its third recording and its reply still leaned toward the answer, so it is not typical of a single attempt. An earlier recording in the author's own environment replied in Portuguese to an English request, and the cause was not isolated. The recordings used a clean profile (`examples/clean-profile.json`; the author's personal skills and plugins stayed installed).
+- `examples/session-5-save-through-file.md`: one conversation, day 1 only, on the SKILL.md of 848fb89 (after `add --file`, dc03ea8). The save worked: after the learner's yes the model wrote the cards to a file with its Write tool, ran `add --file` as a single line, and five cards landed on disk, with nothing added by hand. It did not repeat the note that topic names ignore case and punctuation, and it said the cards went to `~/.teach-back/` although the data was in `$STUDY_DIR`. The review of those cards was not re-run (session 4 covers review). The run used allow rules (`Bash(python3 *)` and `Edit(//tmp/**)`); an interactive session would show approval prompts instead, which were not tested.
+
+Known limits: the runs were made with Claude Code and one model, `claude-sonnet-5-5`, and the skill was used in all five. Sessions 1 to 3 are single turns and ran on SKILL.md as committed in 35c047b, which was edited afterwards (python command, final due count, failed-save handling, topic names). Session 4 ran on 96dc307, whose save instruction (a quoted heredoc) was replaced afterwards by the cards file, so the save failure it records no longer describes the current SKILL.md. Session 5 ran on the current SKILL.md. Sessions 4 and 5 learner turns were written by an AI test driver, not a human. Every prompt named the skill explicitly, so the runs show how it behaves when invoked by name; they do not show that it starts on its own from its description. Session 1 followed the one-question rule only on its third recording and its reply still leaned toward the answer, so it is not typical of a single attempt. An earlier recording in the author's own environment replied in Portuguese to an English request, and the cause was not isolated. The recordings used a clean profile (`examples/clean-profile.json`; the author's personal skills and plugins stayed installed).
 
 ## Tests
 
