@@ -6,7 +6,7 @@
 - Profile: clean (--settings examples/clean-profile.json: hooks, global CLAUDE.md files, auto-memory and claude.ai skills off; the author's personal skills and plugins stayed installed)
 - SKILL.md: as committed in 2613e97 (the commit that added the Context7 rule)
 - Learner turns were written by an AI test driver, not a human. The driver planted one wrong belief on purpose: that `Path.mkdir()` creates missing parent folders by default.
-- Outcome in one line: the Context7 tools were available and the model used them (3 calls) before asking to save; it caught the planted mistake and corrected it; five cards were saved with `add --file`. Imperfections are listed at the end.
+- Outcome in one line: the Context7 tools were available and the model used them (3 calls) before asking to save; the planted mistake was corrected after the Context7 docs check (the gap step had only pointed at the sentence); five cards were saved with `add --file`. Imperfections are listed at the end.
 
 ## Command
 
@@ -118,8 +118,8 @@ The five cards in the file are word for word the five shown in turn 3, and card 
 - Did the model call `resolve-library-id` and `query-docs`? Yes: one `resolve-library-id` and two `query-docs`. The Context7 tools were available and the allow rules let them through.
 - How many calls (limit 3)? Three Context7 calls. The extra `ToolSearch` only loaded the tool definitions.
 - Did it check BEFORE asking to save? Yes. All three calls were in turn 3, before the question about saving.
-- Did it send only a generic library question? Yes. The queries are quoted above; they name `Path.mkdir`, `parents`, `exist_ok` and the path classes, and contain nothing from the learner's text beyond the library's own names. The first query (to `resolve-library-id`) joined two concepts in one string, which the rule ("one concept per query") does not intend; the two `query-docs` calls were one concept each. It picked the library id itself and did not ask which Python version the learner uses (the docs it got were for 3.13.9).
-- Did it catch the planted misconception and say what changed? Yes. It opened turn 3 with "The docs check changed one of your points" and a correction naming `FileNotFoundError` and `parents=True`.
+- Did it send only a generic library question? Yes. The queries are quoted above; they name `Path.mkdir`, `parents`, `exist_ok` and the path classes, and contain nothing from the learner's text beyond the library's own names. The first query (to `resolve-library-id`) broke the rule "one concept per query" by joining two concepts in one string; the two `query-docs` calls were one concept each. It picked the library id itself and did not ask which Python version the learner uses (the docs it got were for 3.13.9).
+- Did it catch the planted misconception and say what changed? Yes: the docs check supplied the correction; the gap step had only pointed at the sentence. It opened turn 3 with "The docs check changed one of your points" and a correction naming `FileNotFoundError` and `parents=True`.
 - Did the saved cards match the docs? Cards 1 to 4 match what the docs returned (card 4's `UnsupportedOperation` since 3.13 appears in the returned text). Card 5 (the `/` operator "normalizes the result") was not covered by any query, so it was not checked, although the rule says to check each card's answer.
 - Did it ask before saving and use `add --file`? Yes: it asked in turn 3 (naming the real folder) and wrote the file and ran `add --file` as one line in turn 4, after the yes.
 
