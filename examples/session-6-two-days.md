@@ -244,8 +244,8 @@ $ STUDY_TODAY=2026-10-09 study.py topics
 {"topics":[{"topic":"hash-table-collisions","cards":5,"due":0}],"problems":[],"folder":"<tmp>/data"}
 $ STUDY_TODAY=2026-10-09 study.py due
 {"cards":[],"total_due":0,"problems":[]}
-$ STUDY_TODAY=2026-10-10 study.py due   (before the review: id, box, due)
-c1 1 2026-10-10 ... c5 1 2026-10-10   (5 cards due)
+$ STUDY_TODAY=2026-10-10 study.py due   (before the review)
+(summarized, not the raw output; the full output was not kept: 5 cards due, c1 to c5, each box 1, due 2026-10-10)
 ```
 
 After day 2, read from the data file (id, box, due):
@@ -258,13 +258,13 @@ After day 2, read from the data file (id, box, due):
 
 ## Followed the skill's rules
 
-- One gap per message, one question mark each: yes. The model asked one gap question (how a lookup knows to stop). The learner answered it correctly and in full, so it asked no second one and went to the cards at the learner's request.
+- One gap per message, one question mark each: the one gap message had one question mark; the card-proposal message has several because the cards are questions. The model asked one gap question (how a lookup knows to stop). The learner answered it correctly and in full, so it asked no second one and went to the cards at the learner's request.
 - Leaned toward the answer: no, in the one gap question.
 - The planned gap (why a good hash function and a low load factor matter) never came up. The model's chosen gap was a different, real but small one, so this run shows one gap round, not the gap the driver planned.
 - Asked before saving and named the folder reported by `topics`: yes, `<tmp>/data` in turn 3 and turn 4. That is the real folder (`topics` printed `"folder":"<tmp>/data"` and the file is there). Unlike session 5, the statement was true.
 - Wrote the cards file and ran `add --file` as one line: yes. The file went to /tmp itself, not to a per-run folder; harmless here, but it is a leftover file outside the run's folder.
 - Told the learner the topic slug: yes (`hash-table-collisions`, "normalized from..."). It did not say that case and punctuation are ignored.
-- Cards from material the learner never said: card 5 (deletion and tombstones) came from the learner's admitted doubt, and the answer came from the model. The model said so in turn 3. The cards 1, 2 and 4 questions are close to the learner's own words.
+- Cards from material the learner never said: card 5 (deletion and tombstones) came from the learner's admitted doubt, and the answer came from the model. The model said so in turn 3. The card questions are partly in the learner's words; card 1 adds a question the learner did not ask (why the table cannot just overwrite the slot).
 - Turn 4 said "The cards are due for review now." That is not true: `add` set them due on 2026-10-10, the next day, and `due` on 2026-10-09 returned 0. A small error by the model.
 - Showed the question before the answer in the review: yes, for all five cards, and waited for the learner's answer first.
 - The model asked the learner to pick the grade each time ("Would you grade this one right, almost, or wrong?") and graded exactly as told: yes.
