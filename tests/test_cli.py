@@ -128,6 +128,80 @@ class TopicNames(CliBase):
         self.assertEqual(out["cards"][0]["answer"], "Dispersão de Rayleigh, ação")
 
 
+class AddFromFile(CliBase):
+    def cards_file(self, text=CARDS, name="cards.json"):
+        path = self.root / name
+        path.write_bytes(text.encode("utf-8"))
+        return path
+
+    def test_add_from_file(self):
+        path = self.cards_file()
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"]})
+        out = json.loads(run(["due"], self.base, today="2026-10-10").stdout)
+        self.assertEqual([c["id"] for c in out["cards"]], ["c1", "c2"])
+
+    def test_dash_reads_stdin(self):
+        r = run(["add", "--topic", "dns", "--file", "-"], self.base, CARDS)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"]})
+
+    def test_missing_file_exits_2_and_creates_nothing(self):
+        path = self.root / "nope.json"
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("error:", r.stderr)
+        self.assertFalse(self.base.exists())
+
+    def test_stderr_does_not_show_the_full_path(self):
+        path = self.root / "nope.json"
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertIn("nope.json", r.stderr)
+        self.assertNotIn(str(self.root), r.stderr)
+
+    def test_directory_as_file_exits_2(self):
+        r = run(["add", "--topic", "dns", "--file", str(self.root)], self.base)
+        self.assertEqual(r.returncode, 2)
+        self.assertFalse(self.base.exists())
+
+    def test_invalid_json_in_file_exits_2_and_writes_nothing(self):
+        path = self.cards_file("not json")
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 2)
+        self.assertFalse(self.base.exists())
+
+    def test_invalid_utf8_in_file_exits_2(self):
+        path = self.root / "bad.json"
+        path.write_bytes(b"[\xff\xfe]")
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 2)
+        self.assertFalse(self.base.exists())
+
+    def test_card_without_answer_in_file_exits_2(self):
+        path = self.cards_file(json.dumps([{"question": "q"}]))
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 2)
+        self.assertFalse(self.base.exists())
+
+    def test_non_latin_and_emoji_round_trip_through_a_file(self):
+        text = json.dumps([{"question": "なぜ空は青い？ 🌤", "answer": "Dispersão de Rayleigh, ação"}],
+                          ensure_ascii=False)
+        path = self.cards_file(text)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        out = json.loads(run(["due", "--topic", "dns"], self.base, today="2026-10-10").stdout)
+        self.assertEqual(out["cards"][0]["question"], "なぜ空は青い？ 🌤")
+        self.assertEqual(out["cards"][0]["answer"], "Dispersão de Rayleigh, ação")
+
+    def test_cards_file_is_left_unchanged(self):
+        path = self.cards_file()
+        before = path.read_bytes()
+        run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertTrue(path.is_file())
+        self.assertEqual(path.read_bytes(), before)
+
+
 class BadInput(CliBase):
     def test_malformed_stdin_exits_2_and_writes_nothing(self):
         r = run(["add", "--topic", "dns"], self.base, "not json")

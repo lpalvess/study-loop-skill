@@ -190,12 +190,23 @@ def cmd_due(args, on):
 
 def cmd_add(args, on):
     path = topic_path(data_dir(), args.topic)
+    source = "stdin"
     try:
-        incoming = json.loads(sys.stdin.read())
+        if args.file is None or args.file == "-":
+            text = sys.stdin.read()
+        else:
+            source = f"cards file {Path(args.file).name}"
+            with open(args.file, encoding="utf-8") as handle:
+                text = handle.read()
+        incoming = json.loads(text)
+    except UnicodeDecodeError:
+        fail(f"{source} must be UTF-8 text")
     except ValueError:
-        fail("stdin must be JSON: a list of {question, answer}")
+        fail(f"{source} must be JSON: a list of {{question, answer}}")
+    except OSError:
+        fail(f"cannot read {source}")
     if not isinstance(incoming, list) or not incoming:
-        fail("stdin must be a non-empty JSON list")
+        fail(f"{source} must be a non-empty JSON list")
     for item in incoming:
         ok = (isinstance(item, dict)
               and isinstance(item.get("question"), str) and item["question"].strip()
@@ -239,6 +250,7 @@ def build_parser():
     due.add_argument("--limit", type=positive_int, default=DEFAULT_LIMIT)
     add = sub.add_parser("add")
     add.add_argument("--topic", required=True)
+    add.add_argument("--file")
     grade = sub.add_parser("grade")
     grade.add_argument("--topic", required=True)
     grade.add_argument("--id", required=True)
