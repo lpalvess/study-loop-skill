@@ -27,6 +27,19 @@ class SlugTests(unittest.TestCase):
     def test_long_names_are_cut_to_60(self):
         self.assertEqual(len(study.slugify("a" * 200)), 60)
 
+    def test_decomposed_and_precomposed_accents_match(self):
+        self.assertEqual(study.slugify("cafe\u0301"), "caf\u00e9")
+        self.assertEqual(study.slugify("caf\u00e9"), "caf\u00e9")
+
+    def test_accent_is_not_dropped(self):
+        self.assertNotEqual(study.slugify("cafe"), study.slugify("caf\u00e9"))
+
+    def test_devanagari_vowel_signs_are_kept(self):
+        self.assertEqual(study.slugify("हिन्दी DNS"), "हिन्दी-dns")
+
+    def test_arabic_diacritics_are_kept(self):
+        self.assertEqual(study.slugify("مَرْحَبًا"), "مَرْحَبًا")
+
 
 class StorageTests(unittest.TestCase):
     def setUp(self):
@@ -67,11 +80,14 @@ class StorageTests(unittest.TestCase):
             "bad due date": [dict(good, due="tomorrow")],
             "cards not a list": "nope",
         }
-        for label, cards in variants.items():
+        for index, (label, cards) in enumerate(variants.items()):
             with self.subTest(label):
-                path = self.write_raw("v.json", json.dumps({"topic": "v", "cards": cards}))
+                text = json.dumps({"topic": "v", "cards": cards})
+                path = self.write_raw(f"v{index}.json", text)
                 with self.assertRaises(study.CorruptTopic):
                     study.load_topic(path)
+                self.assertEqual(path.read_text(encoding="utf-8"), text)
+                self.assertTrue((self.base / f"v{index}.json.bak").exists())
 
     def test_next_card_id_never_reuses(self):
         self.assertEqual(study.next_card_id([]), "c1")

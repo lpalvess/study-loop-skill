@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import sys
+import unicodedata
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -63,7 +64,12 @@ class CorruptTopic(Exception):
 
 
 def slugify(name):
-    slug = re.sub(r"[\W_]+", "-", name.casefold(), flags=re.UNICODE).strip("-")
+    text = unicodedata.normalize("NFC", name.casefold())
+    slug = "".join(
+        ch if ch.isalnum() or unicodedata.category(ch).startswith("M") else "-"
+        for ch in text
+    )
+    slug = re.sub(r"-+", "-", slug).strip("-")
     if not slug:
         raise ValueError("topic name has no usable characters")
     return slug[:60].rstrip("-")
