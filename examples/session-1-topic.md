@@ -3,8 +3,10 @@
 - Tool: Claude Code (headless, `claude -p`)
 - Model: claude-sonnet-5-5
 - Date: 2026-10-09
-- Followed the skill's rules: partly. The skill triggered (it checked for saved topics, then started a new study), did not teach the topic, and quoted the learner's own words ("the DNS server knows the address of every website"). It stayed on one gap. But it ended with two questions in one message (what problems would one server run into, and where does the DNS server get an address it does not know), and the scenario it painted leans toward the answer. The brief and SKILL.md ask for one question and no answer.
-- Note: the first attempt failed with `Error: Input must be provided either through stdin or as a prompt argument when using --print`, because `--allowedTools "Bash(python3 *)"` consumed the prompt as a second value. The run below used `--allowedTools="Bash(python3 *)"` instead. Nothing else changed.
+- Profile: clean (--settings examples/clean-profile.json: hooks, global CLAUDE.md files, auto-memory and claude.ai skills off; the author's personal skills and plugins stayed installed)
+- Followed the skill's rules: yes. One question (a single question mark), asked about one gap, quoting the learner's words ("the DNS server knows the address of every website"). It did not give the answer; the scenario (millions of sites added, moved, removed) sets up the question but does not state the answer. Reply in English, the learner's language.
+- History: this is the third recording of this session. Run 1 (personal profile) asked two questions. Run 2 (clean profile, first tightened wording of SKILL.md) still asked two ("Could one server really hold all of them? If not, what do you think happens...?"). SKILL.md was tightened once more (single question mark, no follow-up question) and this run 3 is the result. Run 1 and 2 replies are not kept here.
+- Note: `--allowedTools` is passed as `--allowedTools="Bash(python3 *)"` because the spaced form swallows the prompt. `--settings` with a file path was accepted.
 
 ## Prompt
 
@@ -12,10 +14,8 @@ Use the teach-back skill. I want to study how DNS works. My explanation: when yo
 
 ## Reply
 
-You have no saved topics, so there's nothing to review yet. We'll start with new material.
+You have no saved topics yet, so nothing is due for review.
 
-You got the core right. Typing a name makes your computer ask a DNS server, and the answer is an IP address that comes back to it.
+Part of your explanation is right: the computer asks a DNS server for the address that goes with a name, and the answer comes back to it.
 
-One spot in your explanation is a false claim. You said "the DNS server knows the address of every website."
-
-Picture a single server holding the address of every website in the world. Millions of sites are added, moved or deleted every day, and the owners of each one control its address. Given that, what problems would that one server run into? And if your computer's DNS server doesn't already know an address, where do you think it gets it?
+You said "the DNS server knows the address of every website." Picture one server holding every website's address, with millions of sites being added, moved and removed all the time. How would that server keep its information correct and up to date?

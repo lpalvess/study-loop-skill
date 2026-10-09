@@ -3,8 +3,9 @@
 - Tool: Claude Code (headless, `claude -p`)
 - Model: claude-sonnet-5-5
 - Date: 2026-10-09
-- Followed the skill's rules: yes. The skill triggered, the reply is in Portuguese (the learner's language), it did not summarize or teach the text, and it asked the learner to explain it first from memory, with no question about the text yet.
-- Note: the first attempt of session 1 had failed on flag syntax; from then on every call used `--allowedTools="Bash(python3 *)"`.
+- Profile: clean (--settings examples/clean-profile.json: hooks, global CLAUDE.md files, auto-memory and claude.ai skills off; the author's personal skills and plugins stayed installed)
+- Followed the skill's rules: yes. One request, no question about the text yet; it asked the learner to explain from memory first, in Portuguese (the learner's language), and did not summarize or teach. Minor: the request lists what to cover ("o que é um índice, para que ele serve e qual é o preço de usá-lo"), which mirrors the text's structure slightly. This run used the SKILL.md after the first tightening; the second tightening (question rule only) came after and does not touch this flow.
+- Note: a harmless stderr warning (`no stdin data received in 3s`) appeared because stdin was not redirected; it is not part of the reply.
 
 ## Prompt
 
@@ -12,6 +13,6 @@ Use a skill teach-back. Quero estudar este texto: 'Um índice de banco de dados 
 
 ## Reply
 
-Você ainda não tem tópicos salvos, então não há revisões pendentes. Vamos direto ao texto.
+Você ainda não tem tópicos salvos, então não há cards para revisar. Vamos direto ao texto.
 
-Explique o que é um índice de banco de dados com as suas palavras, como se fosse para um amigo que não sabe nada do assunto. Não olhe o texto nem pesquise. Se faltar alguma parte, tudo bem. Escreva do jeito que você lembrar.
+Explique com suas palavras, como se fosse para um amigo que não sabe nada de banco de dados, o que é um índice, para que ele serve e qual é o preço de usá-lo. Não olhe o texto enquanto escreve.

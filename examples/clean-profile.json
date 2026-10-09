@@ -1,0 +1,6 @@
+{
+  "disableAllHooks": true,
+  "claudeMdExcludes": ["**/CLAUDE.md"],
+  "autoMemoryEnabled": false,
+  "syncClaudeAiSkills": false
+}

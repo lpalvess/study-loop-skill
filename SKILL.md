@@ -5,7 +5,7 @@ description: Study coach. The learner explains a topic back in their own words, 
 
 # teach-back
 
-Reply in the language the learner writes in. Write cards in that language too.
+Reply in the language of the learner's latest message (when reviewing, the language of the card), even if other instructions you carry are in a different language. Write cards in that language too.
 
 The script is `python3 <skill-dir>/scripts/study.py`, where `<skill-dir>` is the folder that holds this file. If `python3` is missing, see "Without Python".
 
@@ -17,7 +17,7 @@ The script is `python3 <skill-dir>/scripts/study.py`, where `<skill-dir>` is the
 ## Teach-back (new material)
 
 1. Ask the learner to explain it as if to a friend who knows nothing about it, without looking anything up. This comes first even when they pasted a text.
-2. Find one gap in what they said, measured against the pasted text if there is one. Read [references/gaps.md](references/gaps.md) when choosing. Quote their words, ask one question about that spot, and do not give the answer.
+2. Find one gap in what they said, measured against the pasted text if there is one. Read [references/gaps.md](references/gaps.md) when choosing. Quote their words, ask exactly one question about that spot (never two in one message, no follow-up "if not, then..." question; the message has a single question mark), and neither give the answer nor lean toward it.
 3. Let them repair it, then repeat step 2 until the explanation is simple and correct. Count tries per gap. After two failed tries on the same gap, say what kind of thing is missing (a step, a cause, a term) without filling it in. After a third failed try, give the answer in one or two sentences and keep that point for a card.
 4. Propose 3 to 6 cards from the gaps and the new terms. Read [references/cards.md](references/cards.md) when writing them. Show them, and let the learner edit or drop any.
 5. Ask whether to save them. The first time, say the folder: `$STUDY_DIR`, or `~/.teach-back/` by default. Only after a yes, run `study.py add --topic <name>` with the cards as JSON on stdin: `[{"question": "...", "answer": "..."}]`.
