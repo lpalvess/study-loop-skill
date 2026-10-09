@@ -33,6 +33,10 @@ class SkillFileTests(unittest.TestCase):
         for phrase in ("One gap per message", "Never list all the gaps", "Nothing is saved without a yes", "Without Python", "Context7"):
             self.assertIn(phrase, SKILL)
 
+    def test_failure_and_count_rules_are_present(self):
+        for phrase in ("<<'EOF'", "do not retry silently", "study.py due --limit 1"):
+            self.assertIn(phrase, SKILL)
+
     def test_only_real_flags_are_mentioned(self):
         flags = set(re.findall(r"--[a-z][a-z-]*", SKILL))
         self.assertEqual(flags, {"--limit", "--topic", "--id", "--result"})
