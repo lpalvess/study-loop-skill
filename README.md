@@ -12,17 +12,19 @@ Claude Code: from the folder that contains the `teach-back` folder, copy it into
 cp -r teach-back ~/.claude/skills/
 ```
 
-Saving and scheduling need Python 3.8 or newer. Without Python the conversation part still works, but nothing is saved.
+Saving and scheduling need Python 3.8 or newer (`python3`, or `python`/`py` if that is the name on your system). The code was written for 3.8 and tested on Python 3.12.3 on Linux. Windows and macOS have not been tested. Without Python the conversation part still works, but nothing is saved.
 
 Only Claude Code has been tested. Other tools that read the Agent Skills format may work.
 
 ## Use
 
 - "Use teach-back: I want to study how DNS works."
-- Paste a text and say you want to study it.
+- `Use teach-back: study this text: <paste it here>`
 - "Use teach-back: review my due cards."
 
 Then explain the topic in your own words when the skill asks.
+
+Topic names are matched ignoring case and punctuation (`C++` and `C#` both become `c`). Use one session at a time per topic: two sessions saving the same topic at once can lose an update.
 
 ## How it works
 
@@ -36,14 +38,14 @@ Reviews use five boxes with gaps of 1, 3, 7, 16 and 35 days. Right moves a card 
 
 ## Your data
 
-Cards live in `~/.teach-back/`, one JSON file per topic. Set `STUDY_DIR` to use another folder. Nothing is saved before you say yes. Nothing leaves your computer: no network calls and no accounts.
+Cards live in `~/.teach-back/`, one JSON file per topic. Set `STUDY_DIR` to use another folder. Nothing is saved before you say yes. `study.py` makes no network calls and there are no accounts. Your conversation still goes to your AI provider, and the optional Context7 check queries that service.
 
 ## Token cost
 
 | What | Approx. tokens |
 |---|---|
 | Listing (description, every turn) | 59 |
-| Invocation (SKILL.md) | 734 |
+| Invocation (SKILL.md) | 854 |
 | references/cards.md (only when needed) | 187 |
 | references/gaps.md (only when needed) | 201 |
 
@@ -56,8 +58,9 @@ Real runs in `examples/`, each with the tool and model used.
 - `examples/session-1-topic.md`: a topic named in one sentence, in English; it followed the rules only partly, because the reply leaned toward the answer and its question targeted a different gap than the learner's.
 - `examples/session-2-pasted-text.md`: a pasted text, in Portuguese; it asked the learner to explain from memory first and replied in Portuguese, with a mild lean toward the text's structure.
 - `examples/session-3-review.md`: a review of one due card; it showed the question only and waited for the learner's answer.
+- `examples/session-4-multi-turn.md`: one conversation that teaches back (English) and a second that reviews three cards. The review worked: the model showed each question before its answer, ran `grade` three times, and all three cards moved to box 2 on disk. The save did not work in that setup: the model tried `add` with a quoted heredoc, the headless permission rule refused it, and the cards were added by hand before the review. The model told the learner the cards were not saved. One of its gap questions leaned toward the answer.
 
-Known limits: the runs were made with Claude Code and one model, `claude-sonnet-5-5`, and the skill was used in all three. Every prompt named the skill explicitly, so the runs show how it behaves when invoked by name; they do not show that it starts on its own from its description. Session 1 followed the one-question rule only on its third recording and its reply still leaned toward the answer, so it is not typical of a single attempt. An earlier recording in the author's own environment replied in Portuguese to an English request, and the cause was not isolated. The recordings used a clean profile (`examples/clean-profile.json`; the author's personal skills and plugins stayed installed) and the SKILL.md as committed in 35c047b.
+Known limits: the runs were made with Claude Code and one model, `claude-sonnet-5-5`, and the skill was used in all four. Sessions 1 to 3 are single turns and ran on SKILL.md as committed in 35c047b, which was edited afterwards (python command, final due count, failed-save handling, topic names). Session 4 ran on the final SKILL.md commit, and its learner turns were written by an AI test driver, not a human. Every prompt named the skill explicitly, so the runs show how it behaves when invoked by name; they do not show that it starts on its own from its description. Session 1 followed the one-question rule only on its third recording and its reply still leaned toward the answer, so it is not typical of a single attempt. An earlier recording in the author's own environment replied in Portuguese to an English request, and the cause was not isolated. The recordings used a clean profile (`examples/clean-profile.json`; the author's personal skills and plugins stayed installed).
 
 ## Tests
 
