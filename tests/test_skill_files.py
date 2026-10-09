@@ -30,7 +30,8 @@ class SkillFileTests(unittest.TestCase):
         self.assertEqual(used, {"topics", "due", "add", "grade"})
 
     def test_key_rules_are_present(self):
-        for phrase in ("One gap per message", "Never list all the gaps", "Nothing is saved without a yes", "Without Python", "Context7"):
+        for phrase in ("One gap per message", "Never list all the gaps", "Nothing is saved without a yes", "Without Python", "Context7",
+                       "resolve-library-id", "query-docs", "at most 3 calls", "never the learner's own text", "correct a card", "recommended"):
             self.assertIn(phrase, SKILL)
 
     def test_failure_and_count_rules_are_present(self):

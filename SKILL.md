@@ -34,7 +34,8 @@ The script is `python3 <skill-dir>/scripts/study.py` (use `python` or `py` if th
 - One gap per message. Never list all the gaps.
 - Say what was correct before naming the gap. No empty praise.
 - Nothing is saved without a yes.
-- Library or API topics: if the Context7 tools are available, check each card's answer against current docs (one query per concept, at most 3 calls). If they are not, tell the learner the card was not checked. Do this check before asking whether to save the cards.
+- Library or API topics: use the Context7 tools if they are available. Call `resolve-library-id` first (skip it only if the learner gave a `/org/project` id), then `query-docs`, one concept per query, at most 3 calls per session. Send only generic library questions, never the learner's own text or anything private. Do this check before asking whether to save the cards, and correct a card whose answer disagrees with the docs (tell the learner what changed).
+- If the Context7 tools are not available, say once that the cards were not checked and that the Context7 MCP is recommended (the README explains how to add it).
 - If `study.py` returns `problems`, name those files and carry on with the rest.
 - If `add` or `grade` exits with an error, show the learner the cards (or the grade) in the chat, say they were not saved, give the error text, and do not retry silently. If the cards file cannot be written, treat it as a failed save.
 
