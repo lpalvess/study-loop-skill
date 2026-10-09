@@ -123,3 +123,147 @@ def iter_topics(base):
     if not base.is_dir():
         return []
     return sorted((p.stem, p) for p in base.glob("*.json"))
+
+
+def collect_due(base, on, topic=None, limit=DEFAULT_LIMIT):
+    if topic is not None:
+        path = topic_path(base, topic)
+        paths = [(slugify(topic), path)] if path.is_file() else []
+    else:
+        paths = iter_topics(base)
+    found, problems = [], []
+    for slug, path in paths:
+        try:
+            data = load_topic(path)
+        except (CorruptTopic, OSError):
+            problems.append(path.name)
+            continue
+        for card in data["cards"]:
+            if is_due(card, on):
+                found.append({"topic": slug, "id": card["id"], "question": card["question"],
+                              "answer": card["answer"], "box": card["box"], "due": card["due"]})
+    found.sort(key=lambda c: (c["due"], c["topic"], c["id"]))
+    return found[:limit], len(found), problems
+
+
+def summarize_topics(base, on):
+    topics, problems = [], []
+    for slug, path in iter_topics(base):
+        try:
+            data = load_topic(path)
+        except (CorruptTopic, OSError):
+            problems.append(path.name)
+            continue
+        topics.append({"topic": slug, "cards": len(data["cards"]),
+                       "due": sum(1 for c in data["cards"] if is_due(c, on))})
+    return topics, problems
+
+
+def emit(obj):
+    print(json.dumps(obj, ensure_ascii=False, separators=(",", ":")))
+
+
+def fail(message, code=2):
+    print(f"error: {message}", file=sys.stderr)
+    sys.exit(code)
+
+
+def positive_int(text):
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError("must be a whole number")
+    if value < 1:
+        raise argparse.ArgumentTypeError("must be 1 or more")
+    return value
+
+
+def cmd_topics(args, on):
+    topics, problems = summarize_topics(data_dir(), on)
+    emit({"topics": topics, "problems": problems})
+
+
+def cmd_due(args, on):
+    cards, total, problems = collect_due(data_dir(), on, args.topic, args.limit)
+    emit({"cards": cards, "total_due": total, "problems": problems})
+
+
+def cmd_add(args, on):
+    path = topic_path(data_dir(), args.topic)
+    try:
+        incoming = json.loads(sys.stdin.read())
+    except ValueError:
+        fail("stdin must be JSON: a list of {question, answer}")
+    if not isinstance(incoming, list) or not incoming:
+        fail("stdin must be a non-empty JSON list")
+    for item in incoming:
+        ok = (isinstance(item, dict)
+              and isinstance(item.get("question"), str) and item["question"].strip()
+              and isinstance(item.get("answer"), str) and item["answer"].strip())
+        if not ok:
+            fail("each card needs non-empty text fields question and answer")
+    data = load_topic(path) if path.is_file() else {"topic": args.topic, "cards": []}
+    added = []
+    for item in incoming:
+        card_id = next_card_id(data["cards"])
+        data["cards"].append(new_card(card_id, item["question"].strip(), item["answer"].strip(), on))
+        added.append(card_id)
+    save_topic(path, data)
+    emit({"topic": slugify(args.topic), "added": added})
+
+
+def cmd_grade(args, on):
+    path = topic_path(data_dir(), args.topic)
+    if not path.is_file():
+        fail("unknown topic", 1)
+    data = load_topic(path)
+    for index, card in enumerate(data["cards"]):
+        if card["id"] == args.id:
+            data["cards"][index] = apply_grade(card, args.result, on)
+            save_topic(path, data)
+            emit({"id": args.id, "box": data["cards"][index]["box"],
+                  "due": data["cards"][index]["due"]})
+            return
+    fail("unknown card id", 1)
+
+
+COMMANDS = {"topics": cmd_topics, "due": cmd_due, "add": cmd_add, "grade": cmd_grade}
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(prog="study.py")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("topics")
+    due = sub.add_parser("due")
+    due.add_argument("--topic")
+    due.add_argument("--limit", type=positive_int, default=DEFAULT_LIMIT)
+    add = sub.add_parser("add")
+    add.add_argument("--topic", required=True)
+    grade = sub.add_parser("grade")
+    grade.add_argument("--topic", required=True)
+    grade.add_argument("--id", required=True)
+    grade.add_argument("--result", required=True, choices=RESULTS)
+    return parser
+
+
+def main(argv=None):
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+    args = build_parser().parse_args(argv)
+    try:
+        on = today()
+    except ValueError:
+        fail("STUDY_TODAY must be YYYY-MM-DD")
+    try:
+        COMMANDS[args.command](args, on)
+    except CorruptTopic as exc:
+        fail(f"cannot read {exc}; a copy was kept next to it as .bak", 3)
+    except OSError as exc:
+        fail(f"cannot read or write a data file ({type(exc).__name__})", 3)
+    except ValueError as exc:
+        fail(str(exc))
+
+
+if __name__ == "__main__":
+    main()
