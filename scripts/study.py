@@ -180,7 +180,7 @@ def positive_int(text):
 
 def cmd_topics(args, on):
     topics, problems = summarize_topics(data_dir(), on)
-    emit({"topics": topics, "problems": problems})
+    emit({"topics": topics, "problems": problems, "folder": os.path.abspath(data_dir())})
 
 
 def cmd_due(args, on):
@@ -196,15 +196,16 @@ def cmd_add(args, on):
             text = sys.stdin.read()
         else:
             source = f"cards file {Path(args.file).name}"
-            with open(args.file, encoding="utf-8") as handle:
+            with open(args.file, encoding="utf-8-sig") as handle:
                 text = handle.read()
         incoming = json.loads(text)
     except UnicodeDecodeError:
         fail(f"{source} must be UTF-8 text")
     except ValueError:
         fail(f"{source} must be JSON: a list of {{question, answer}}")
-    except OSError:
-        fail(f"cannot read {source}")
+    except OSError as exc:
+        reason = exc.strerror or type(exc).__name__
+        fail(f"cannot read {source} ({reason})")
     if not isinstance(incoming, list) or not incoming:
         fail(f"{source} must be a non-empty JSON list")
     for item in incoming:
@@ -220,7 +221,7 @@ def cmd_add(args, on):
         data["cards"].append(new_card(card_id, item["question"].strip(), item["answer"].strip(), on))
         added.append(card_id)
     save_topic(path, data)
-    emit({"topic": slugify(args.topic), "added": added})
+    emit({"topic": slugify(args.topic), "added": added, "folder": os.path.abspath(data_dir())})
 
 
 def cmd_grade(args, on):

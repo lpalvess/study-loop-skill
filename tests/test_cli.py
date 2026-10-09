@@ -29,7 +29,7 @@ class ReadOnlyCommands(CliBase):
     def test_topics_on_missing_dir_is_empty_and_creates_nothing(self):
         r = run(["topics"], self.base)
         self.assertEqual(r.returncode, 0)
-        self.assertEqual(json.loads(r.stdout), {"topics": [], "problems": []})
+        self.assertEqual(json.loads(r.stdout), {"topics": [], "problems": [], "folder": str(self.base)})
         self.assertFalse(self.base.exists())
 
     def test_due_on_missing_dir_is_empty_and_creates_nothing(self):
@@ -48,7 +48,7 @@ class AddAndDue(CliBase):
     def test_add_then_due_next_day(self):
         r = run(["add", "--topic", "dns"], self.base, CARDS)
         self.assertEqual(r.returncode, 0)
-        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"]})
+        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"], "folder": str(self.base)})
         today_out = json.loads(run(["due"], self.base, today="2026-10-09").stdout)
         self.assertEqual(today_out["total_due"], 0)
         out = json.loads(run(["due"], self.base, today="2026-10-10").stdout)
@@ -78,6 +78,23 @@ class AddAndDue(CliBase):
         run(["add", "--topic", "dns"], self.base, CARDS)
         out = json.loads(run(["topics"], self.base, today="2026-10-10").stdout)
         self.assertEqual(out["topics"], [{"topic": "dns", "cards": 2, "due": 2}])
+
+
+class FolderField(CliBase):
+    def test_topics_reports_folder_and_creates_nothing(self):
+        out = json.loads(run(["topics"], self.base).stdout)
+        self.assertEqual(out["folder"], str(self.base))
+        self.assertFalse(self.base.exists())
+
+    def test_add_reports_folder(self):
+        out = json.loads(run(["add", "--topic", "dns"], self.base, CARDS).stdout)
+        self.assertEqual(out["folder"], str(self.base))
+
+    def test_due_and_grade_outputs_have_no_folder(self):
+        run(["add", "--topic", "dns"], self.base, CARDS)
+        self.assertNotIn("folder", json.loads(run(["due"], self.base, today="2026-10-10").stdout))
+        g = run(["grade", "--topic", "dns", "--id", "c1", "--result", "right"], self.base)
+        self.assertNotIn("folder", json.loads(g.stdout))
 
 
 class Grade(CliBase):
@@ -138,57 +155,91 @@ class AddFromFile(CliBase):
         path = self.cards_file()
         r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"]})
+        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"], "folder": str(self.base)})
         out = json.loads(run(["due"], self.base, today="2026-10-10").stdout)
         self.assertEqual([c["id"] for c in out["cards"]], ["c1", "c2"])
 
     def test_dash_reads_stdin(self):
         r = run(["add", "--topic", "dns", "--file", "-"], self.base, CARDS)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"]})
+        self.assertEqual(json.loads(r.stdout), {"topic": "dns", "added": ["c1", "c2"], "folder": str(self.base)})
 
     def test_missing_file_exits_2_and_creates_nothing(self):
         path = self.root / "nope.json"
-        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
         self.assertEqual(r.returncode, 2)
-        self.assertIn("error:", r.stderr)
+        self.assertIn("error: cannot read cards file nope.json (No such file or directory)", r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
         self.assertFalse(self.base.exists())
 
     def test_stderr_does_not_show_the_full_path(self):
         path = self.root / "nope.json"
-        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
         self.assertIn("nope.json", r.stderr)
         self.assertNotIn(str(self.root), r.stderr)
 
     def test_directory_as_file_exits_2(self):
-        r = run(["add", "--topic", "dns", "--file", str(self.root)], self.base)
+        folder = self.root / "somedir"
+        folder.mkdir()
+        r = run(["add", "--topic", "dns", "--file", str(folder)], self.base, CARDS)
         self.assertEqual(r.returncode, 2)
+        self.assertIn("error: cannot read cards file somedir (Is a directory)", r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertNotIn(str(self.root), r.stderr)
+        self.assertFalse(self.base.exists())
+
+    @unittest.skipIf(not hasattr(os, "geteuid") or os.geteuid() == 0, "needs a non-root POSIX user")
+    def test_unreadable_file_exits_2_with_the_reason(self):
+        path = self.cards_file()
+        path.chmod(0)
+        self.addCleanup(path.chmod, 0o600)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("error: cannot read cards file cards.json (Permission denied)", r.stderr)
+        self.assertNotIn(str(self.root), r.stderr)
         self.assertFalse(self.base.exists())
 
     def test_invalid_json_in_file_exits_2_and_writes_nothing(self):
         path = self.cards_file("not json")
-        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
         self.assertEqual(r.returncode, 2)
+        self.assertIn("cards file cards.json must be JSON", r.stderr)
         self.assertFalse(self.base.exists())
 
     def test_invalid_utf8_in_file_exits_2(self):
         path = self.root / "bad.json"
         path.write_bytes(b"[\xff\xfe]")
-        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
         self.assertEqual(r.returncode, 2)
+        self.assertIn("cards file bad.json must be UTF-8 text", r.stderr)
         self.assertFalse(self.base.exists())
 
     def test_card_without_answer_in_file_exits_2(self):
         path = self.cards_file(json.dumps([{"question": "q"}]))
-        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
         self.assertEqual(r.returncode, 2)
+        self.assertIn("each card needs", r.stderr)
         self.assertFalse(self.base.exists())
+
+    def test_file_wins_over_stdin(self):
+        path = self.cards_file(json.dumps([{"question": "from file", "answer": "a"}]))
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
+        self.assertEqual(json.loads(r.stdout)["added"], ["c1"])
+        out = json.loads(run(["due", "--topic", "dns"], self.base, today="2026-10-10").stdout)
+        self.assertEqual([c["question"] for c in out["cards"]], ["from file"])
+
+    def test_bom_in_file_is_accepted(self):
+        path = self.root / "bom.json"
+        path.write_bytes(b"\xef\xbb\xbf" + CARDS.encode("utf-8"))
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["added"], ["c1", "c2"])
 
     def test_non_latin_and_emoji_round_trip_through_a_file(self):
         text = json.dumps([{"question": "なぜ空は青い？ 🌤", "answer": "Dispersão de Rayleigh, ação"}],
                           ensure_ascii=False)
         path = self.cards_file(text)
-        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base, CARDS)
         self.assertEqual(r.returncode, 0, r.stderr)
         out = json.loads(run(["due", "--topic", "dns"], self.base, today="2026-10-10").stdout)
         self.assertEqual(out["cards"][0]["question"], "なぜ空は青い？ 🌤")
@@ -197,7 +248,9 @@ class AddFromFile(CliBase):
     def test_cards_file_is_left_unchanged(self):
         path = self.cards_file()
         before = path.read_bytes()
-        run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        r = run(["add", "--topic", "dns", "--file", str(path)], self.base)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(len(json.loads((self.base / "dns.json").read_text(encoding="utf-8"))["cards"]), 2)
         self.assertTrue(path.is_file())
         self.assertEqual(path.read_bytes(), before)
 
