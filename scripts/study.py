@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""teach-back: review agenda (box method) and flashcard storage.
+"""study-loop: review agenda (box method) and flashcard storage.
 
 Exit codes: 0 ok, 1 not found, 2 bad input, 3 unreadable data file.
 """
@@ -24,7 +24,7 @@ def today():
 
 
 def data_dir():
-    return Path(os.environ.get("STUDY_DIR") or Path.home() / ".teach-back")
+    return Path(os.environ.get("STUDY_DIR") or Path.home() / ".study-loop")
 
 
 def new_card(card_id, question, answer, on):

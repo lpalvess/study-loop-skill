@@ -13,7 +13,7 @@ SKILL = (ROOT / "SKILL.md").read_text(encoding="utf-8") if (ROOT / "SKILL.md").e
 class SkillFileTests(unittest.TestCase):
     def test_skill_exists_with_the_right_name(self):
         self.assertTrue(SKILL, "SKILL.md is missing")
-        self.assertRegex(SKILL, r"(?m)^name: teach-back$")
+        self.assertRegex(SKILL, r"(?m)^name: study-loop$")
 
     def test_budget_is_respected(self):
         errors, _, _ = check_budget.check(ROOT)

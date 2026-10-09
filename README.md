@@ -1,4 +1,4 @@
-# teach-back
+# study-loop
 
 A study skill for AI coding assistants. You explain a topic back in your own words. The skill finds the weak spot, one at a time, turns weak spots into flashcards, and schedules reviews so you see each card again before you forget it.
 
@@ -6,10 +6,10 @@ It answers in the language you write in.
 
 ## Install
 
-Claude Code: from the folder that contains the `teach-back` folder, copy it into your skills directory.
+Claude Code: from the folder that contains the `study-loop` folder, copy it into your skills directory.
 
 ```bash
-cp -r teach-back ~/.claude/skills/
+cp -r study-loop ~/.claude/skills/
 ```
 
 Saving and scheduling need Python 3.8 or newer (`python3`, or `python`/`py` if that is the name on your system). The code was written for 3.8 and tested on Python 3.12.3 on Linux. Windows and macOS have not been tested. Without Python the conversation part still works, but nothing is saved.
@@ -18,9 +18,9 @@ Only Claude Code has been tested. Other tools that read the Agent Skills format 
 
 ## Use
 
-- "Use teach-back: I want to study how DNS works."
-- `Use teach-back: study this text: <paste it here>`
-- "Use teach-back: review my due cards."
+- "Use study-loop: I want to study how DNS works."
+- `Use study-loop: study this text: <paste it here>`
+- "Use study-loop: review my due cards."
 
 Then explain the topic in your own words when the skill asks.
 
@@ -38,7 +38,7 @@ Reviews use five boxes with gaps of 1, 3, 7, 16 and 35 days. Right moves a card 
 
 ## Your data
 
-Cards live in `~/.teach-back/`, one JSON file per topic. Set `STUDY_DIR` to use another folder. Nothing is saved before you say yes. `study.py` makes no network calls and there are no accounts. Your conversation still goes to your AI provider, and the optional Context7 check queries that service.
+Cards live in `~/.study-loop/`, one JSON file per topic. Set `STUDY_DIR` to use another folder. Nothing is saved before you say yes. `study.py` makes no network calls and there are no accounts. Your conversation still goes to your AI provider, and the optional Context7 check queries that service.
 
 ## Token cost
 
@@ -53,14 +53,14 @@ Counted as words x 1.35. The guides load only when the skill needs them.
 
 ## Recorded runs
 
-Real runs in `examples/`, each with the tool and model used.
+Real runs in `examples/`, each with the tool and model used. Sessions 1 to 5 were recorded when the skill was named teach-back, so their prompts and paths say teach-back; they are kept verbatim.
 
 - `examples/session-1-topic.md`: a topic named in one sentence, in English; it followed the rules only partly, because the reply leaned toward the answer and its question targeted a different gap than the learner's.
 - `examples/session-2-pasted-text.md`: a pasted text, in Portuguese; it asked the learner to explain from memory first and replied in Portuguese, with a mild lean toward the text's structure.
 - `examples/session-3-review.md`: a review of one due card; it showed the question only and waited for the learner's answer.
 - `examples/session-4-multi-turn.md`: one conversation that teaches back (English) and a second that reviews three cards. The review worked: the model showed each question before its answer, ran `grade` three times, and all three cards moved to box 2 on disk. The save did not work in that setup: the model tried `add` with a quoted heredoc, the headless permission rule refused it, and the cards were added by hand before the review. The model told the learner the cards were not saved. One of its gap questions leaned toward the answer.
 
-- `examples/session-5-save-through-file.md`: one conversation, day 1 only, on the SKILL.md of 848fb89 (after `add --file`, dc03ea8). The model ran three gap rounds, not one. The save worked: after the learner's yes the model wrote the cards to a file with its Write tool, ran `add --file` as a single line, and five cards landed on disk, with nothing added by hand. It did not repeat the note that topic names ignore case and punctuation, and it said the cards went to `~/.teach-back/` although the data was in `$STUDY_DIR`. This run was made before the `folder` field existed in the output of `topics` and `add`, which was added afterwards so the model can state the real folder; it was not re-recorded. The review of those cards was not re-run (session 4 covers review). The run used allow rules (`Bash(python3 *)` and `Edit(//tmp/**)`); an interactive session would show approval prompts instead, which were not tested.
+- `examples/session-5-save-through-file.md`: one conversation, day 1 only, on the SKILL.md of 848fb89 (after `add --file`, dc03ea8). The model ran three gap rounds, not one. The save worked: after the learner's yes the model wrote the cards to a file with its Write tool, ran `add --file` as a single line, and five cards landed on disk, with nothing added by hand. It did not repeat the note that topic names ignore case and punctuation, and it said the cards went to the default data folder although the data was in `$STUDY_DIR`. This run was made before the `folder` field existed in the output of `topics` and `add`, which was added afterwards so the model can state the real folder; it was not re-recorded. The review of those cards was not re-run (session 4 covers review). The run used allow rules (`Bash(python3 *)` and `Edit(//tmp/**)`); an interactive session would show approval prompts instead, which were not tested.
 
 Known limits: the runs were made with Claude Code and one model, `claude-sonnet-5-5`, and the skill was used in all five. Sessions 1 to 3 are single turns and ran on SKILL.md as committed in 35c047b, which was edited afterwards (python command, final due count, failed-save handling, topic names). Session 4 ran on 96dc307, whose save instruction (a quoted heredoc) was replaced afterwards by the cards file, so the save failure it records no longer describes the current SKILL.md. Session 5 ran on the current SKILL.md. Sessions 4 and 5 learner turns were written by an AI test driver, not a human. Every prompt named the skill explicitly, so the runs show how it behaves when invoked by name; they do not show that it starts on its own from its description. Session 1 followed the one-question rule only on its third recording and its reply still leaned toward the answer, so it is not typical of a single attempt. An earlier recording in the author's own environment replied in Portuguese to an English request, and the cause was not isolated. The recordings used a clean profile (`examples/clean-profile.json`; the author's personal skills and plugins stayed installed).
 
