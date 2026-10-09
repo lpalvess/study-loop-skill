@@ -127,7 +127,7 @@ The five cards on disk are the five the model proposed in turn 5. The cards file
 
 ## Followed the skill's rules
 
-- Said the folder and asked before saving: yes (turn 5), and saved only after the yes in turn 6.
+- Asked before saving: yes (turn 5), and saved only after the yes in turn 6. It named a folder, but the statement was not accurate for that run (see the last item of this list).
 - Ran `topics` first: yes.
 - Wrote a file, then `add --file` as a single line: yes.
 - Told the learner the topic slug: yes, in turn 6 ("`tcp-vs-udp`"). It did not repeat the note that topic names ignore case and punctuation.
