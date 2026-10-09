@@ -20,7 +20,7 @@ The script is `python3 <skill-dir>/scripts/study.py` (use `python` or `py` if th
 2. Find one gap in what they said, measured against the pasted text if there is one. Read [references/gaps.md](references/gaps.md) when choosing. Quote their words, ask exactly one question about that spot (never two in one message, no follow-up "if not, then..." question; the message has a single question mark), and neither give the answer nor lean toward it.
 3. Let them repair it, then repeat step 2 until the explanation is simple and correct. Count tries per gap. After two failed tries on the same gap, say what kind of thing is missing (a step, a cause, a term) without filling it in. After a third failed try, give the answer in one or two sentences and keep that point for a card.
 4. Propose 3 to 6 cards from the gaps and the new terms. Read [references/cards.md](references/cards.md) when writing them. Show them, and let the learner edit or drop any.
-5. Ask whether to save them. The first time, say the folder: `$STUDY_DIR`, or `~/.teach-back/` by default. Only after a yes, run `study.py add --topic <name>` with the cards as JSON on stdin: `[{"question": "...", "answer": "..."}]`. Pass the JSON through a quoted heredoc (`<<'EOF'`) so apostrophes in the cards cannot break it. Tell the learner the `topic` that `add` returns: topic names are matched ignoring case and punctuation (`C++` and `C#` both become `c`).
+5. Ask whether to save them. The first time, say the folder: `$STUDY_DIR`, or `~/.teach-back/` by default. Only after a yes, write the cards as a JSON list `[{"question": "...", "answer": "..."}]` to a file with your file-writing tool (a temporary path such as `<tmp>/teach-back-cards.json`), then run `study.py add --topic <name> --file <that path>` as one single-line command. Tell the learner the `topic` that `add` returns: topic names are matched ignoring case and punctuation (`C++` and `C#` both become `c`).
 
 ## Review
 
@@ -36,7 +36,7 @@ The script is `python3 <skill-dir>/scripts/study.py` (use `python` or `py` if th
 - Nothing is saved without a yes.
 - Library or API topics: if the Context7 tools are available, check each card's answer against current docs (one query per concept, at most 3 calls). If they are not, tell the learner the card was not checked. Do this check before asking whether to save the cards.
 - If `study.py` returns `problems`, name those files and carry on with the rest.
-- If `add` or `grade` exits with an error, show the learner the cards (or the grade) in the chat, say they were not saved, give the error text, and do not retry silently.
+- If `add` or `grade` exits with an error, show the learner the cards (or the grade) in the chat, say they were not saved, give the error text, and do not retry silently. If the cards file cannot be written, treat it as a failed save.
 
 ## Without Python
 

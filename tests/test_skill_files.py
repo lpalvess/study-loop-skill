@@ -34,12 +34,12 @@ class SkillFileTests(unittest.TestCase):
             self.assertIn(phrase, SKILL)
 
     def test_failure_and_count_rules_are_present(self):
-        for phrase in ("<<'EOF'", "do not retry silently", "study.py due --limit 1"):
+        for phrase in ("--file", "do not retry silently", "study.py due --limit 1"):
             self.assertIn(phrase, SKILL)
 
     def test_only_real_flags_are_mentioned(self):
         flags = set(re.findall(r"--[a-z][a-z-]*", SKILL))
-        self.assertEqual(flags, {"--limit", "--topic", "--id", "--result"})
+        self.assertEqual(flags, {"--limit", "--topic", "--id", "--result", "--file"})
 
 
 if __name__ == "__main__":
