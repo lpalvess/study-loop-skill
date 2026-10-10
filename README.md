@@ -4,6 +4,8 @@ A study skill for AI coding assistants. You explain a topic back in your own wor
 
 It answers in the language you write in.
 
+> **Idioma / Language:** English first, [Português embaixo](#portugu%C3%AAs-biblioteca-de-estudo-em-loop) — the full documentation in Portuguese is at the end of this file.
+
 ## Install
 
 Claude Code: from the folder that contains the `study-loop` folder, copy it into your skills directory.
@@ -108,5 +110,118 @@ python3 tools/check_budget.py .
 ```
 
 ## License
+
+MIT
+
+## Português: biblioteca de estudo em loop
+
+Uma skill de estudo para assistentes de código com IA. Você explica um tema com suas próprias palavras. A skill encontra o ponto fraco, um por vez, transforma pontos fracos em flashcards e agenda revisões para você rever cada cartão antes de esquecê-lo.
+
+Ela responde no idioma em que você escrever.
+
+## Instalação
+
+Claude Code: a partir da pasta que contém o diretório `study-loop`, copie-o para o seu diretório de skills.
+
+```bash
+cp -r study-loop ~/.claude/skills/
+```
+
+Salvar e agendar precisam de Python 3.8 ou mais novo (`python3`, ou `python`/`py` se for o nome no seu sistema). O código foi escrito para 3.8 e testado no Python 3.12.3 no Linux. Windows e macOS não foram testados. Sem Python, a parte da conversa continua funcionando, mas nada é salvo.
+
+Apenas o Claude Code foi testado. Outras ferramentas que leem o formato Agent Skills podem funcionar.
+
+## Context7 (recomendado)
+
+Context7 é um servidor MCP que fornece documentação atualizada de bibliotecas. Para temas de biblioteca ou API, o study-loop usa o Context7 para conferir a resposta de cada cartão contra a documentação antes de pedir para salvar: uma consulta por conceito, no máximo 3 chamadas, e um cartão que discorde da documentação é corrigido (você é avisado do que mudou).
+
+É recomendado, mas não obrigatório. A skill foi feita para continuar funcionando sem ele, mas esse caminho não foi registrado; para temas de biblioteca ou API, o modelo é instruído a dizer uma vez que os cartões não foram conferidos.
+
+Para adicionar no Claude Code:
+
+```bash
+claude mcp add context7 -- npx -y @upstash/context7-mcp
+```
+
+Veja https://github.com/upstash/context7 para instruções e opções atualizadas.
+
+Privacidade: as consultas vão para o serviço do Context7. A skill é instruída a enviar apenas perguntas genéricas de biblioteca, nunca o seu próprio texto.
+
+## Uso
+
+- "Use study-loop: quero estudar como o DNS funciona."
+- "Use study-loop: estude este texto: <cole o texto aqui>"
+- "Use study-loop: revise meus cartões vencidos."
+
+Depois, explique o tema com suas próprias palavras quando a skill pedir.
+
+Nomes de tópico são comparados ignorando maiúsculas e pontuação (`C++` e `C#` viram ambos `c`). Use uma sessão por vez por tópico: duas sessões salvando o mesmo tópico ao mesmo tempo podem perder uma atualização.
+
+## Como funciona
+
+1. Você explica o tema sem consultar nada.
+2. A skill cita você e faz uma pergunta sobre uma lacuna. Ela não dá a resposta.
+3. Quando a explicação se sustenta, ela propõe de 3 a 6 cartões. Você edita ou descarta qualquer um.
+4. Você decide se salva. Depois de um sim, o modelo escreve os cartões em um arquivo JSON temporário e roda `study.py add --topic <nome> --file <arquivo>` em um único comando (`--file -` ou sem `--file` lê da entrada padrão).
+5. Nas revisões você responde primeiro, depois vê a resposta, e diz certo, quase ou errado.
+
+As revisões usam cinco caixas com intervalos de 1, 3, 7, 16 e 35 dias. Certo move o cartão uma caixa para cima. Quase mantém na caixa. Errado devolve para a caixa 1.
+
+## Seus dados
+
+Os cartões ficam em `~/.study-loop/`, um arquivo JSON por tópico. Defina `STUDY_DIR` para usar outra pasta. Nada é salvo antes de você dizer sim. O `study.py` não faz chamadas de rede e não há contas. Sua conversa ainda vai para o seu provedor de IA, e a conferência opcional pelo Context7 consulta esse serviço (veja [Context7](#context7-recomendado)).
+
+## Custo de tokens
+
+| O quê | Tokens aprox. |
+|---|---|
+| Listagem (descrição, a cada turno) | 59 |
+| Invocação (SKILL.md) | 966 |
+| references/cards.md (só quando necessário) | 187 |
+| references/gaps.md (só quando necessário) | 201 |
+
+Contado como palavras x 1.35. Os guias carregam apenas quando a skill precisa deles.
+
+## Registros de execuções
+
+Execuções reais em `examples/`, cada uma com a ferramenta e o modelo usados. As sessões 1 a 5 foram gravadas quando a skill se chamava teach-back, então seus prompts e caminhos dizem teach-back; são mantidos verbatim.
+
+- `examples/session-1-topic.md`: um tópico nomeado em uma frase, em inglês; seguiu as regras só em parte, porque a resposta pendeu para o lado da resposta e a pergunta mirou numa lacuna diferente da do aprendiz.
+- `examples/session-2-pasted-text.md`: um texto colado, em português; pediu ao aprendiz para explicar de memória primeiro e respondeu em português, com uma leve inclinação para a estrutura do texto.
+- `examples/session-3-review.md`: uma revisão de um cartão vencido; mostrou só a pergunta e esperou a resposta do aprendiz.
+- `examples/session-4-multi-turn.md`: uma conversa que ensina (inglês) e uma segunda que revisa três cartões. A revisão funcionou: o modelo mostrou cada pergunta antes da resposta, rodou `grade` três vezes, e os três cartões foram para a caixa 2 no disco. O salvamento não funcionou nesse ambiente: o modelo tentou `add` com um heredoc entre aspas, a regra de permissão headless recusou, e os cartões foram adicionados à mão antes da revisão. O modelo avisou o aprendiz que os cartões não foram salvos. Uma das perguntas de lacuna pendeu para o lado da resposta.
+
+- `examples/session-5-save-through-file.md`: uma conversa, só o dia 1, no SKILL.md de 848fb89 (depois de `add --file`, dc03ea8). O modelo rodou três rodadas de lacuna, não uma. O salvamento funcionou: após o sim do aprendiz, o modelo escreveu os cartões num arquivo com a ferramenta Write, rodou `add --file` em uma linha, e cinco cartões chegaram ao disco, sem nada adicionado à mão. Não repetiu a nota de que nomes de tópico ignoram maiúsculas e pontuação, e disse que os cartões foram para a pasta padrão de dados (citou a pasta padrão antiga `~/.teach-back/`) embora os dados estivessem em `$STUDY_DIR`. Essa execução foi feita antes de o campo `folder` existir na saída de `topics` e `add`, adicionado depois para que o modelo possa informar a pasta real; não foi regravado. A revisão desses cartões não foi refeita (a sessão 4 cobre revisão). A execução usou regras allow (`Bash(python3 *)` e `Edit(//tmp/**)`); uma sessão interativa mostraria pedidos de aprovação, o que não foi testado.
+- `examples/session-6-two-days.md`: dois dias no SKILL.md final (46e1bd4), com o nome study-loop, tópico: como uma tabela hash trata colisões. O dia 1 salvou cinco cartões por um arquivo de cartões com `add --file` em uma linha, e o modelo citou a pasta real de dados. O dia 2 revisou os cinco: o modelo mostrou cada pergunta primeiro, rodou `grade` cinco vezes com os resultados que o aprendiz deu (quatro certos, um quase) e terminou com `due --limit 1` e contagem real de 0. Defeitos: o modelo fez uma pergunta de lacuna e o aprendiz a respondeu por completo, então a lacuna planejada (função de hash e load factor) nunca surgiu; o modelo escreveu o arquivo de cartões direto em /tmp; e avisou o aprendiz que os cartões novos venciam agora quando venciam no dia seguinte. Nada foi recusado. Regras allow iguais às da sessão 5.
+- `examples/session-7-library-topic.md`: uma conversa, só o dia 1, tópico: o módulo pathlib do Python, no SKILL.md de 2613e97 (o commit que adicionou a regra do Context7). As ferramentas do Context7 estavam disponíveis e o modelo fez três chamadas (`resolve-library-id` uma vez, `query-docs` duas) antes de pedir para salvar. O aprendiz disse algo errado de propósito (que `Path.mkdir()` cria pastas pai por padrão); o modelo corrigiu, citando `parents=False` e `FileNotFoundError`, e os cartões salvos trazem a resposta corrigida. Defeitos: a pergunta de lacuna do modelo já apontava para a frase errada, então a execução não mostra a conferência da documentação pegando algo que a etapa de lacuna não pegou; um cartão (o operador `/`) não foi coberto por nenhuma consulta, então não foi conferido; a primeira consulta quebrou a regra de um conceito por consulta; o arquivo de cartões foi para /tmp de novo. Nada foi recusado. A allow list era as duas regras da sessão 5 mais as duas ferramentas do Context7. O caso sem Context7 não foi gravado.
+
+Limites conhecidos:
+
+- Escopo
+  - As execuções foram feitas com Claude Code e um modelo, `claude-sonnet-5-5`.
+  - A skill foi usada nas sete execuções, e todo prompt a nomeou explicitamente. As execuções mostram como ela se comporta quando invocada pelo nome; não mostram que ela começa por conta própria a partir da descrição.
+- Qual SKILL.md cada execução usou (cada gravação rodou numa versão diferente)
+  - Sessões 1 a 3: 35c047b (editado depois: comando python, contagem final de vencidos, tratamento de falha de salvamento, nomes de tópico).
+  - Sessão 4: 96dc307 (a instrução de salvamento dela, um heredoc entre aspas, foi substituída depois pelo arquivo de cartões, então a falha de salvamento que registra não descreve mais o SKILL.md atual).
+  - Sessão 5: 848fb89 (editado depois: o campo `folder` e o nome da pasta na pergunta de salvamento).
+  - Sessão 6: 46e1bd4 (antes da regra do Context7 ser reescrita).
+  - Sessão 7: 2613e97, a atual.
+  - Sessões 1 a 5 foram gravadas quando a skill se chamava teach-back, então seus prompts e caminhos dizem teach-back.
+- Método
+  - Os turnos de aprendiz das sessões 4 a 7 foram escritos por um piloto de testes de IA, não por um humano.
+  - As execuções usaram regras allow headless, então os pedidos de aprovação interativos não foram testados.
+  - As gravações usaram um perfil limpo (`examples/clean-profile.json`); as skills e plugins pessoais do autor continuaram instalados.
+- Confiabilidade
+  - A sessão 1 seguiu a regra de uma pergunta só na sua terceira gravação, e a resposta ainda pendeu para o lado da resposta, então ela não é típica de uma tentativa única.
+  - Uma gravação anterior no ambiente do próprio autor respondeu em português a um pedido em inglês, e a causa não foi isolada.
+
+## Testes
+
+```bash
+python3 -m unittest discover -s tests -v
+python3 tools/check_budget.py .
+```
+
+## Licença
 
 MIT
